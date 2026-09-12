@@ -16,6 +16,7 @@ import { AuditReportModal } from './components/AuditReportModal';
 
 import { Alert, Incident, Scenario, SystemStatus, FirewallRule } from './types/soc';
 import { soundFx } from './utils/audio';
+import { API_BASE, getWsUrl } from './config';
 
 export function App() {
   const [showIntro, setShowIntro] = useState(() => {
@@ -50,7 +51,7 @@ export function App() {
   // Fetch system status
   const fetchSystemStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/system/status');
+      const res = await fetch(`${API_BASE}/api/system/status`);
       if (res.ok) {
         const data = await res.json();
         setSystemStatus(data);
@@ -63,7 +64,7 @@ export function App() {
   // Fetch scenarios
   const fetchScenarios = useCallback(async () => {
     try {
-      const res = await fetch('/api/scenarios');
+      const res = await fetch(`${API_BASE}/api/scenarios`);
       if (res.ok) {
         const data = await res.json();
         setScenarios(data);
@@ -76,7 +77,7 @@ export function App() {
   // Fetch incident details
   const fetchIncident = useCallback(async (incidentId: string) => {
     try {
-      const res = await fetch(`/api/investigations/${incidentId}`);
+      const res = await fetch(`${API_BASE}/api/investigations/${incidentId}`);
       if (res.ok) {
         const data = await res.json();
         setCurrentIncident(data);
@@ -89,7 +90,7 @@ export function App() {
   // Fetch firewall rules
   const fetchFirewall = useCallback(async () => {
     try {
-      const res = await fetch('/api/firewall');
+      const res = await fetch(`${API_BASE}/api/firewall`);
       if (res.ok) {
         const data = await res.json();
         setFirewallRules(data.rules || []);
@@ -103,7 +104,7 @@ export function App() {
   const handleLoadScenario = useCallback(async (scenarioId: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/scenarios/load', {
+      const res = await fetch(`${API_BASE}/api/scenarios/load`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: scenarioId })
@@ -113,7 +114,7 @@ export function App() {
         setActiveScenarioId(scenarioId);
 
         // Fetch alert
-        const alertRes = await fetch(`/api/alerts/${data.alert_id}`);
+        const alertRes = await fetch(`${API_BASE}/api/alerts/${data.alert_id}`);
         if (alertRes.ok) {
           const alertData = await alertRes.json();
           setCurrentAlert(alertData);
@@ -142,8 +143,7 @@ export function App() {
   useEffect(() => {
     if (!currentIncident?.id) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/ws/${currentIncident.id}`;
+    const wsUrl = getWsUrl(`/api/ws/${currentIncident.id}`);
     let socket: WebSocket | null = null;
 
     try {
@@ -175,7 +175,7 @@ export function App() {
     setIsLoading(true);
     soundFx.alert();
     try {
-      const res = await fetch('/api/agent/run', {
+      const res = await fetch(`${API_BASE}/api/agent/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ incident_id: currentIncident.id, auto_respond: true })
@@ -199,7 +199,7 @@ export function App() {
     setIsLoading(true);
     soundFx.click();
     try {
-      const res = await fetch(`/api/investigations/${currentIncident.id}/step`, {
+      const res = await fetch(`${API_BASE}/api/investigations/${currentIncident.id}/step`, {
         method: 'POST'
       });
       if (res.ok) {
@@ -219,7 +219,7 @@ export function App() {
     if (!currentIncident) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/investigations/${currentIncident.id}/respond-and-verify?retry=${retry}`, {
+      const res = await fetch(`${API_BASE}/api/investigations/${currentIncident.id}/respond-and-verify?retry=${retry}`, {
         method: 'POST'
       });
       if (res.ok) {
@@ -241,12 +241,12 @@ export function App() {
     setIsLoading(true);
     soundFx.alert();
     try {
-      const injectRes = await fetch(`/api/scenarios/${activeScenarioId}/inject-evidence`, {
+      const injectRes = await fetch(`${API_BASE}/api/scenarios/${activeScenarioId}/inject-evidence`, {
         method: 'POST'
       });
       if (injectRes.ok) {
         // Trigger agent reassessment
-        const reassessRes = await fetch(`/api/investigations/${currentIncident.id}/reassess`, {
+        const reassessRes = await fetch(`${API_BASE}/api/investigations/${currentIncident.id}/reassess`, {
           method: 'POST'
         });
         if (reassessRes.ok) {
@@ -268,7 +268,7 @@ export function App() {
     if (!currentIncident) return;
     setIsLoading(true);
     try {
-      const res = await fetch('/api/human-override', {
+      const res = await fetch(`${API_BASE}/api/human-override`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -295,7 +295,7 @@ export function App() {
   const handleResetSimulation = async () => {
     setIsLoading(true);
     try {
-      await fetch('/api/scenarios/reset', { method: 'POST' });
+      await fetch(`${API_BASE}/api/scenarios/reset`, { method: 'POST' });
       await handleLoadScenario('01');
     } catch {
       // ignore

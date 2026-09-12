@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Incident } from '../types/soc';
 import { soundFx } from '../utils/audio';
+import { API_BASE } from '../config';
 
 interface AuditReportModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
   const handleDownload = async (format: 'json' | 'markdown') => {
     soundFx.click();
     try {
-      const res = await fetch(`/api/reports/${incident.id}/export?format=${format}`);
+      const res = await fetch(`${API_BASE}/api/reports/${incident.id}/export?format=${format}`);
       if (format === 'json') {
         const data = await res.json();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
